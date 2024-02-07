@@ -265,11 +265,14 @@
 		selectAll: false,
 		minTotal: null,
         maxTotal: null,
+		selectedItems: [],
 	  };
 	},
 	mounted() {
 	  this.getCustomerData();
 	  this.totalRows = this.items.length;
+	  this.getSelectedItemsFromStorage();
+      this.updateSelectedItemsStatus();
 	},
 	methods: {
 	  selectAllRows() {
@@ -280,29 +283,42 @@
         }
       },
 	  bayarSelectedItems() {
-   		 if (this.selectedRows.length === 0) {
-      		alert('Pilih setidaknya satu item untuk membayar.');
-     	 return;
-    	}
+		if (this.selectedRows.length === 0) {
+		alert('Pilih setidaknya satu item untuk membayar.');
+		return;
+		}
 
-   		 if (confirm('Anda yakin ingin membayar item terpilih?')) {
+		if (confirm('Anda yakin ingin membayar item terpilih?')) {
+		
+		const selectedIds = this.selectedRows;
 
-     		 const selectedIds = this.selectedRows;
-
-			selectedIds.forEach(id => {
-				const selectedItem = this.items.find(item => item.id === id);
+		selectedIds.forEach(id => {
+			const selectedItem = this.items.find(item => item.id === id);
+			if (selectedItem) {
+			selectedItem.status = 'LUNAS';
+			localStorage.setItem(`selectedItem_${id}`, true);
+			axios.put(`http://localhost:3000/piutangunit/${id}`, { status: 'LUNAS' })
+				.then(response => {
+				console.log(`Item dengan id ${id} berhasil diperbarui menjadi LUNAS.`);
+				})
+				.catch(error => {
+				console.error(`Gagal memperbarui status item dengan id ${id}: ${error.message}`);
+				});
+			}
+		});
+		this.selectedRows = [];
+		}
+	},
+		updateSelectedItemsStatus() {
+			for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key.startsWith('selectedItem_')) {
+				const id = key.replace('selectedItem_', '');
+				const selectedItem = this.items.find(item => item.id === parseInt(id));
 				if (selectedItem) {
-					selectedItem.status = 'LUNAS';
-					axios.put(`http://localhost:3000/piutangunit/${id}`, { status: 'LUNAS' })
-					.then(response => {
-					console.log(`Item dengan id ${id} berhasil diperbarui menjadi LUNAS.`);
-					})
-					.catch(error => {
-					console.error(`Gagal memperbarui status item dengan id ${id}: ${error.message}`);
-					});
+				selectedItem.status = 'LUNAS';
 				}
-			});
-			this.selectedRows = [];
+			}
 			}
 		},
 		applyTotalFilter() {
