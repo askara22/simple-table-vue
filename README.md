@@ -1,4 +1,4 @@
-# crud
+# tab-vue
 
 ## Project setup
 ```
